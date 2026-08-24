@@ -1,0 +1,63 @@
+recipe_version: '2'
+model: rdtand/Qwen3.8-27B-PrismaAQUA-5.5bit-vllm
+runtime: sglang
+container: lmsysorg/sglang:qwen38-27b-dflash2-minoverlay
+
+mods:
+  - fix-qwen35-prismaaqua-sglang
+
+metadata:
+  description: rdtand Qwen3.8-27B-PrismaAQUA-5.5bit under SGLang (patched compressed-tensors matcher) + DFlash2 draft + froggeric chat template
+  maintainer: "@m0l0"
+  model_params: 27B
+  model_dtype: nvfp4
+  kv_dtype: fp8
+  quantization: compressed-tensors
+  quant_bits: 4
+
+cluster_only: false
+solo_only: false
+
+defaults:
+  host: 0.0.0.0
+  port: 2000
+  served_model_name: qwen
+  tensor_parallel: 1
+  max_num_seqs: 8
+  max_model_len: 262144
+  mem_fraction_static: 0.90
+  speculative_draft_model_path: z-lab/Qwen3.8-27B-DFlash2
+  speculative_draft_model_revision: 50307d4c4cde6860d4eee73e2547cd786fe8e8a4
+
+env:
+  HF_HUB_OFFLINE: '0'
+  SGLANG_OPT_MAMBA_SKIP_DECODE_LOCK: '0'
+
+command: |
+  python3 -m sglang.launch_server \
+    --model-path rdtand/Qwen3.8-27B-PrismaAQUA-5.5bit-vllm \
+    --served-model-name {served_model_name} \
+    --trust-remote-code \
+    --mem-fraction-static {mem_fraction_static} \
+    --attention-backend flashinfer \
+    --chunked-prefill-size 8192 \
+    --disable-prefill-cuda-graph \
+    --kv-cache-dtype fp8_e4m3 \
+    --mamba-ssm-dtype bfloat16 \
+    --mamba-full-memory-ratio 4.21 \
+    --mamba-radix-cache-strategy extra_buffer \
+    --max-running-requests {max_num_seqs} \
+    --context-length {max_model_len} \
+    --speculative-algorithm DFLASH \
+    --speculative-draft-model-path {speculative_draft_model_path} \
+    --speculative-draft-model-revision {speculative_draft_model_revision} \
+    --speculative-num-draft-tokens 8 \
+    --reasoning-parser qwen3 \
+    --tool-call-parser qwen3_coder \
+    --chat-template /cache/huggingface/fixed_chat_template.jinja \
+    --default-chat-template-kwargs '{"reasoning_effort":"medium","preserve_thinking":true}' \
+    --sampling-defaults model \
+    --enable-metrics \
+    --enable-cache-report \
+    --host {host} \
+    --port {port}

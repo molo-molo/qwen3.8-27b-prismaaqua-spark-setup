@@ -1,0 +1,14 @@
+# tool-eval-bench reports
+runs/
+
+# archived/experiment artifacts
+archive/
+
+# local benchmark data
+data/
+
+# internal session notes
+.thoughts/
+
+*.pyc
+__pycache__/
